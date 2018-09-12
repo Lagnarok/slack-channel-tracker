@@ -99,10 +99,12 @@ def change_logger(current_channels, past_channels, added, removed, modified, cha
 
     # Any properties of channels changed?
     if len(modified):
+        change_log.write("\nModified Channels listed below. Only changes to {} will be listed.\n".format(
+           ", ".join(TRACKED_CHANNEL_PROPERTIES)
+        ))
         for channel_id,channel_comparison in modified.items():
             version1 = channel_comparison[0]
             version2 = channel_comparison[1]
-            change_log.write("----------{}----------\n".format(channel_id))
             for k,v in version1.items():
                 if k in TRACKED_CHANNEL_PROPERTIES and v != version2[k]:
                     change_log.write("Modified {} in {}\n".format(k,version1["name"]))
@@ -145,21 +147,21 @@ def main():
 
     # First API call; no known cursor to next page
     current_state, next_cursor = slack_api_call()
+    current_channels = {}
     
     # If there aren't pages, just run once.
     if not next_cursor:
         current_channels = map_to_dict(current_state["channels"])
-        added, removed, modified = compare_dicts(past_channels, current_channels)
-        change_logger(current_channels, past_channels, added, removed, modified, change_log)
 
-    # If there are pages, loop until they run out.
+    # If there are pages, spool them into current_channels until they run out.
     while next_cursor:
         print(next_cursor)
-        current_channels = map_to_dict(current_state["channels"])
-        added, removed, modified = compare_dicts(past_channels, current_channels)
-        change_logger(current_channels, past_channels, added, removed, modified, change_log)
-
+        current_channels.update(map_to_dict(current_state["channels"]))
         current_state, next_cursor = slack_api_call(next_cursor)
+    
+    added, removed, modified = compare_dicts(past_channels, current_channels)
+    change_logger(current_channels, past_channels, added, removed, modified, change_log)
+
         
     change_log.close()
 
