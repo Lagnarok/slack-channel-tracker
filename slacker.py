@@ -151,7 +151,6 @@ def main():
 
     # If there are pages, spool them into current_channels until they run out.
     while next_cursor:
-        print(next_cursor)
         current_channels.update(map_to_dict(current_state["channels"]))
         current_state, next_cursor = slack_api_call(next_cursor)
     
